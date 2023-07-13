@@ -1,50 +1,85 @@
 import java.util.HashMap;
 
 public class RentalInfo {
+    
+  private static final String REGULAR = "regular";
+  private static final String NEW = "new";
+  private static final String CHILDRENS = "childrens";
 
   public String statement(Customer customer) {
-    HashMap<String, Movie> movies = new HashMap();
-    movies.put("F001", new Movie("You've Got Mail", "regular"));
-    movies.put("F002", new Movie("Matrix", "regular"));
-    movies.put("F003", new Movie("Cars", "childrens"));
-    movies.put("F004", new Movie("Fast & Furious X", "new"));
+    
+    // Creamos las peliculas
+    HashMap<String, Movie> movies = createMovies();
 
     double totalAmount = 0;
     int frequentEnterPoints = 0;
-    String result = "Rental Record for " + customer.getName() + "\n";
+    
+    // Usamos un StringBuilder
+    StringBuilder result = new StringBuilder();
+    result.append("Rental Record for ").append(customer.getName()).append("\n");
+    
     for (MovieRental r : customer.getRentals()) {
-      double thisAmount = 0;
+        
+      // Calcular monto por cada pelicula
+      double thisAmount = calculateAmount(movies.get(r.getMovieId()), r.getDays());
 
-      // determine amount for each movie
-      if (movies.get(r.getMovieId()).getCode().equals("regular")) {
-        thisAmount = 2;
-        if (r.getDays() > 2) {
-          thisAmount = ((r.getDays() - 2) * 1.5) + thisAmount;
-        }
-      }
-      if (movies.get(r.getMovieId()).getCode().equals("new")) {
-        thisAmount = r.getDays() * 3;
-      }
-      if (movies.get(r.getMovieId()).getCode().equals("childrens")) {
-        thisAmount = 1.5;
-        if (r.getDays() > 3) {
-          thisAmount = ((r.getDays() - 3) * 1.5) + thisAmount;
-        }
-      }
+      // Calcular puntos de bonificacion por cada pelicula
+      frequentEnterPoints += calculateFrequentEnterPoints(movies.get(r.getMovieId()), r.getDays());
 
-      //add frequent bonus points
-      frequentEnterPoints++;
-      // add bonus for a two day new release rental
-      if (movies.get(r.getMovieId()).getCode() == "new" && r.getDays() > 2) frequentEnterPoints++;
+      // Añadir cifras por cada pelicula
+      result.append("\t").append(movies.get(r.getMovieId()).getTitle()).append("\t").append(thisAmount).append("\n");
 
-      //print figures for this rental
-      result += "\t" + movies.get(r.getMovieId()).getTitle() + "\t" + thisAmount + "\n";
-      totalAmount = totalAmount + thisAmount;
+      totalAmount += thisAmount;
     }
-    // add footer lines
-    result += "Amount owed is " + totalAmount + "\n";
-    result += "You earned " + frequentEnterPoints + " frequent points\n";
+    // Añadir lineas finales
+    result.append("Amount owed is ").append(totalAmount).append("\n");
+    result.append("You earned ").append(frequentEnterPoints).append(" frequent points\n");
 
-    return result;
+    return result.toString();
   }
+  
+  private HashMap<String, Movie> createMovies() {
+    HashMap<String, Movie> movies = new HashMap();
+    movies.put("F001", new Movie("You've Got Mail", REGULAR));
+    movies.put("F002", new Movie("Matrix", REGULAR));
+    movies.put("F003", new Movie("Cars", CHILDRENS));
+    movies.put("F004", new Movie("Fast & Furious X", NEW));
+    return movies;
+  }
+  
+  private double calculateAmount(Movie movie, int days) {
+      
+    double thisAmount = 0;
+
+    switch (movie.getCode()) {
+        case REGULAR:
+            thisAmount = 2;
+            if (days > 2) {
+                thisAmount += (days - 2) * 1.5;
+            }       break;
+        case NEW:
+            thisAmount = days * 3;
+            break;
+        case CHILDRENS:
+            thisAmount = 1.5;
+            if (days > 3) {
+                thisAmount += (days - 3) * 1.5;
+            }       break;
+        default:
+            break;
+    }
+
+    return thisAmount;
+  }
+  
+  private int calculateFrequentEnterPoints(Movie movie, int daysRented) {
+    int points = 1;
+
+    if (movie.getCode().equals(NEW) && daysRented > 2) {
+      points++;
+    }
+
+    return points;
+  }
+  
 }
